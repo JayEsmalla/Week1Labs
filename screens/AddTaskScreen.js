@@ -8,6 +8,7 @@ export default function AddTaskScreen() {
   const [tasks, setTasks] = useState([]);
   const [errorMessage, setErrorMessage] = useState('');
   const [isLoaded, setIsLoaded] = useState(false);
+  const [quote, setQuote] = useState("Loading today's motivation...");
 
   useEffect(() => {
     const loadTasks = async () => {
@@ -40,6 +41,13 @@ export default function AddTaskScreen() {
     saveTasks();
   }, [tasks, isLoaded]);
 
+  useEffect(() => {
+    fetch('https://api.quotable.io/random')
+      .then((response) => response.json())
+      .then((data) => setQuote(data.content))
+      .catch(() => setQuote('Believe in yourself and get it done!'));
+  }, []);
+
   function handleAddTask() {
     if (taskText.trim() === '') {
       setErrorMessage('Please type a task before adding it.');
@@ -62,6 +70,15 @@ export default function AddTaskScreen() {
 
   return (
     <View style={styles.container}>
+      <Text style={styles.quote}>💬 {quote}</Text>
+      <Button
+        title="New Quote"
+        onPress={() => {
+          fetch('https://api.quotable.io/random')
+            .then((response) => response.json())
+            .then((data) => setQuote(data.content));
+        }}
+      />
       <Text style={styles.heading}>Add a Task</Text>
       <TextInput
         style={styles.input}
@@ -103,6 +120,12 @@ const styles = StyleSheet.create({
     paddingTop: 60,
     paddingHorizontal: 16,
     backgroundColor: '#FFFFFF',
+  },
+  quote: {
+    fontStyle: 'italic',
+    color: '#6B7280',
+    marginBottom: 16,
+    textAlign: 'center',
   },
   heading: { fontSize: 24, fontWeight: 'bold', marginBottom: 16 },
   input: {
