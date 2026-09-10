@@ -1,14 +1,17 @@
 import { useState, useEffect } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, FlatList } from 'react-native';
-import { db } from '../firebaseConfig';
+import { auth, db } from '../firebaseConfig';
 import {
   collection,
   addDoc,
   onSnapshot,
+  query,
+  where,
   doc,
   updateDoc,
   deleteDoc,
 } from 'firebase/firestore';
+import { signOut } from 'firebase/auth';
 import TaskCard from '../components/TaskCard';
 
 export default function AddTaskScreen() {
@@ -18,8 +21,16 @@ export default function AddTaskScreen() {
   const [quote, setQuote] = useState("Loading today's motivation...");
 
   useEffect(() => {
-    const unsubscribe = onSnapshot(
+    const user = auth.currentUser;
+    if (!user) return undefined;
+
+    const tasksQuery = query(
       collection(db, 'tasks'),
+      where('ownerId', '==', user.uid)
+    );
+
+    const unsubscribe = onSnapshot(
+      tasksQuery,
       (snapshot) => {
         const loadedTasks = snapshot.docs.map((docItem) => ({
           id: docItem.id,
@@ -50,9 +61,16 @@ export default function AddTaskScreen() {
     }
 
     try {
+      const user = auth.currentUser;
+      if (!user) {
+        setErrorMessage('User session not found. Please log in again.');
+        return;
+      }
+
       await addDoc(collection(db, 'tasks'), {
         title: taskText.trim(),
         done: false,
+        ownerId: user.uid,
       });
       setTaskText('');
       setErrorMessage('');
@@ -91,6 +109,7 @@ export default function AddTaskScreen() {
             .then((data) => setQuote(data.content));
         }}
       />
+      <Button title="Log Out" onPress={() => signOut(auth)} />
       <Text style={styles.heading}>Add a Task</Text>
       <TextInput
         style={styles.input}
